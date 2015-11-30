@@ -9,6 +9,7 @@ public class GridManager : MonoBehaviour {
 	public float HexRadius;
 
 	public Vector2 PlayerGridPosition;
+	public Vector2 TestGoalGridPosition;
 	public Vector3 PlayerCubePosition {
 		get {
 			return new Vector3(PlayerGridPosition.x, PlayerGridPosition.y, -PlayerGridPosition.x-PlayerGridPosition.y);
@@ -33,6 +34,7 @@ public class GridManager : MonoBehaviour {
 	void Start() {
 		PlayerGridPosition = new Vector2(0.0F,0.0F);
 		CreateBasicGrid();
+		HighlightPath( SimplePath( FindHex( PlayerGridPosition ), FindHex( TestGoalGridPosition ) ) );
 	}
 	
 	// Update is called once per frame
@@ -62,9 +64,9 @@ public class GridManager : MonoBehaviour {
 		Vector3 GlobalCoordinates = new Vector3(0.0F, 0.0F, 0.0F);
 		GameObject CurrentTile;
 
-		for(int GridX = 0; GridX < (int)GridSize.x; GridX++) {
+		for (int GridX = 0; GridX < (int)GridSize.x; GridX++) {
 			OddRowPush = ( GridX % 2 == 1 ) ? ( YStep / 2 ) : 0;
-			for(int GridY = 0; GridY < (int)GridSize.y; GridY++) {
+			for (int GridY = 0; GridY < (int)GridSize.y; GridY++) {
 				try {
 					GlobalCoordinates.x = (GridY*YStep)+OddRowPush;
 					GlobalCoordinates.y = -GridX*XStep;
@@ -105,8 +107,8 @@ public class GridManager : MonoBehaviour {
 	}
 
 	// A* Search based simple path
-	public Stack<HexTile> SimplePath(HexTile start, HexTile goal) {
-		Stack<HexTile> Path = new Stack<HexTile>();
+	public List<HexTile> SimplePath(HexTile start, HexTile goal) {
+		List<HexTile> Path = new List<HexTile>();
 		Dictionary<HexTile, HexTile> CameFrom = new Dictionary<HexTile, HexTile>();
 		Dictionary<HexTile, int> CostSoFar = new Dictionary<HexTile, int>();
 		PriorityQueue<HexTile> frontier = new PriorityQueue<HexTile>();
@@ -132,64 +134,28 @@ public class GridManager : MonoBehaviour {
 		}
 
 		HexTile RevCurrent = goal;
-		Path.Push(CameFrom[RevCurrent]);
+		Path.Add(goal);
+		Path.Add(CameFrom[RevCurrent]);
 		while (RevCurrent != start) {
 			RevCurrent = CameFrom[RevCurrent];
-			Path.Push(RevCurrent);
+			Path.Add(RevCurrent);
 		}
+		Path.Remove(start);
+		Path.Reverse();
 		return Path;
 	}
-
-	// Using A* path finding with optional count for steps
-	/*public List<HexTile> GetQuickestPath(HexTile a, HexTile b, int AllowedSteps = 5) {
-
-
-		int CurrentDistance = HexDistance(a,b);
-		int HCost = 0;
-		int TempHCost = 0;
-		HexTile CurrentTile = a;
-		HexTile CheapestNeighbour = a;
-
-		List<HexTile> Path = new List<HexTile>();
-		List<HexTile> Frontier = new List<HexTile>();
-		List<HexTile> Visited = new List<HexTile>();
-
-		for( int StepsTaken = 0; CurrentDistance != 0 || StepsTaken < AllowedSteps; StepsTaken++ ) {
-			HCost = 0;
-
-			// Looping through each neighbour of the current tile to find the cheapest path
-			foreach(Vector3 CurrentNeighbourCube in CurrentTile.CubeNeighbours) {
-				HexTile CurrentNeighbour = FindHexByCube(CurrentNeighbourCube);
-				if(CurrentNeighbour.Passable) {
-					TempHCost = HexDistance(CurrentNeighbour, a) + HexDistance(CurrentNeighbour, b);
-					if( HCost == 0 || TempHCost < HCost ) {
-						HCost = TempHCost;
-						CheapestNeighbour = CurrentNeighbour;
-					}
-				}
-			}
-
-			// If we found a neighbour to step to and it's not already in the list
-			if( CheapestNeighbour != CurrentTile && !Path.Contains(CurrentTile) ) {
-				CurrentTile = CheapestNeighbour;
-				CurrentDistance = HexDistance(CurrentTile, b);
-				// Don't add the tile to the path if it already exists
-				Path.Add(CurrentTile);
-			// Otherwise we found an incomplete path
-			} else {
-				// Making sure the destination is not in the list (the path is really broken)
-				// and because of the nature of the algorithm we need to remove the
-				// very last step so we exactly hit the obstacle instead of "recoiling"
-				if( !Path.Contains(b) ) Path.Remove(CurrentTile);
-				CurrentDistance = 0;
-			}
-		}
-
-		return Path;
-	}*/
 
 	public void HighlightPlayerPosition() {
 		FindHex( new Vector2(PlayerGridPosition.x, PlayerGridPosition.y) ).ColorHexTile(new Color(1, 0, 0, 1));
 	}
-	
+
+	public void HighlightPath(List<HexTile> Path) {
+		float blue = 0.2F;
+		float green = 1.0F;
+		foreach (HexTile CurrentTile in Path) {
+			CurrentTile.ColorHexTile(new Color(0,green,blue,1));
+			blue *= 1.5F;
+			green /= 1.5F;
+		}
+	}
 }
