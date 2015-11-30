@@ -1,9 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class HexInfo {
-	//The GameObject of this HexTile
-	private GameObject Hex;
+public class HexTile {
+	// Basic properties of this tile
+	public int Cost;
+	public bool Passable;
+	public bool BlockingTheView;
 	// Global Position
 	public Vector3 GlobalCoordinates;
 	// Position in the Grid
@@ -13,22 +15,26 @@ public class HexInfo {
 		get {
 			return new Vector3(GridCoordinates.x, GridCoordinates.y, -GridCoordinates.x-GridCoordinates.y);
 		}
+		set {
+			GridCoordinates = new Vector2(value.x,value.z);
+		}
 	}
+	//The GameObject of this HexTile
+	private GameObject HexObject;
+
+
 	// Hex Properties
 	public Vector2[] GridNeighbours;
 	public Vector3[] CubeNeighbours;
-	public bool Passable;
-	public bool BlockingTheView;
-	public int Cost;
 
 	// Default Constructor
-	public HexInfo() {
+	public HexTile() {
 		Passable = true;
 		Cost = 1;
 	}
 	// Consturctor that knows the global and the grid position
-	public HexInfo(GameObject Hex_, float x, float y, int GrX, int GrY) {
-		Hex = Hex_;
+	public HexTile(GameObject Hex_, float x, float y, int GrX, int GrY) {
+		HexObject = Hex_;
 		GlobalCoordinates = new Vector3(x, 0, y);
 		GridCoordinates = new Vector2(GrX, GrY);
 		GridNeighbours = new Vector2[] {
@@ -44,8 +50,8 @@ public class HexInfo {
 		Cost = 1;
 	}
 	// Consturctor that knows the global and the grid position
-	public HexInfo(GameObject Hex_, float x, float y, int GrX, int GrY, bool Passable_, int Cost_) {
-		Hex = Hex_;
+	public HexTile(GameObject Hex_, float x, float y, int GrX, int GrY, bool Passable_, int Cost_) {
+		HexObject = Hex_;
 		GlobalCoordinates = new Vector3(x, 0, y);
 		GridCoordinates = new Vector2(GrX, GrY);
 		GridNeighbours = new Vector2[] {
@@ -62,6 +68,6 @@ public class HexInfo {
 	}
 
 	public void ColorHexTile(Color NewColor) {
-		Hex.GetComponent<Renderer>().material.color = NewColor;
+		HexObject.GetComponent<Renderer>().material.color = NewColor;
 	}
 }
