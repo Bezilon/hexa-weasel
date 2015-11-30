@@ -7,8 +7,17 @@ public class GridManager : MonoBehaviour {
 
 	public Vector2 GridSize;
 	public float HexRadius;
-	[HideInInspector]
 
+	public Vector2 PlayerGridPosition;
+	public Vector3 PlayerCubePosition {
+		get {
+			return new Vector3(PlayerGridPosition.x, PlayerGridPosition.y, -PlayerGridPosition.x-PlayerGridPosition.y);
+		}
+	}
+	// Default Tile Object
+	public GameObject DefaultTile;
+
+	[HideInInspector]
 	public static readonly Vector3[] Directions = new [] {
 		new Vector3(1,-1,0),
 		new Vector3(1,0,-1),
@@ -17,17 +26,7 @@ public class GridManager : MonoBehaviour {
 		new Vector3(-1,0,1),
 		new Vector3(0,-1,1)
 	};
-
-	public Vector2 PlayerGridPosition;
-	public Vector3 PlayerCubePosition {
-		get {
-			return new Vector3(PlayerGridPosition.x, PlayerGridPosition.y, -PlayerGridPosition.x-PlayerGridPosition.y);
-		}
-	}
-
-	// Default Tile Object
-	public GameObject DefaultTile;
-
+	[HideInInspector]
 	private List<HexTile> HexList = new List<HexTile>();
 
 	// Use this for initialization
@@ -101,8 +100,44 @@ public class GridManager : MonoBehaviour {
 		return HexList.Find( h => (h == a) );
 	}
 
-	public int HexDistance(HexTile a, HexTile b) {
+	public int HeuristicHexDistance(HexTile a, HexTile b) {
 		return (Math.Abs((int)a.CubeCoordinates.x - (int)b.CubeCoordinates.x) + Math.Abs((int)a.CubeCoordinates.y - (int)b.CubeCoordinates.y) + Math.Abs((int)a.CubeCoordinates.z - (int)b.CubeCoordinates.z)) / 2;
+	}
+
+	// A* Search based simple path
+	public Stack<HexTile> SimplePath(HexTile start, HexTile goal) {
+		Stack<HexTile> Path = new Stack<HexTile>();
+		Dictionary<HexTile, HexTile> CameFrom = new Dictionary<HexTile, HexTile>();
+		Dictionary<HexTile, int> CostSoFar = new Dictionary<HexTile, int>();
+		PriorityQueue<HexTile> frontier = new PriorityQueue<HexTile>();
+		frontier.Enqueue(start, 0);
+		
+		CameFrom[start] = start;
+		CostSoFar[start] = 0;
+		
+		while (frontier.Count > 0) {
+			HexTile current = frontier.Dequeue();
+			
+			if (current.Equals(goal)) break;
+			
+			foreach (HexTile next in Neighbors(current)) {
+				int newCost = CostSoFar[current] + next.Cost;
+				if ( !CostSoFar.ContainsKey(next) || newCost < CostSoFar[next]) {
+					CostSoFar[next] = newCost;
+					int priority = newCost + HeuristicHexDistance(next, goal);
+					frontier.Enqueue(next, priority);
+					CameFrom[next] = current;
+				}
+			}
+		}
+
+		HexTile RevCurrent = goal;
+		Path.Push(CameFrom[RevCurrent]);
+		while (RevCurrent != start) {
+			RevCurrent = CameFrom[RevCurrent];
+			Path.Push(RevCurrent);
+		}
+		return Path;
 	}
 
 	// Using A* path finding with optional count for steps
