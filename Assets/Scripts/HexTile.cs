@@ -20,12 +20,7 @@ public class HexTile {
 		}
 	}
 	//The GameObject of this HexTile
-	private GameObject HexObject;
-
-
-	// Hex Properties
-	public Vector2[] GridNeighbours;
-	public Vector3[] CubeNeighbours;
+	public GameObject HexObject;
 
 	// Default Constructor
 	public HexTile() {
@@ -37,14 +32,6 @@ public class HexTile {
 		HexObject = Hex_;
 		GlobalCoordinates = new Vector3(x, 0, y);
 		GridCoordinates = new Vector2(GrX, GrY);
-		GridNeighbours = new Vector2[] {
-			new Vector2(GrX+1, GrY), new Vector2(GrX+1, GrY-1), new Vector2(GrX, GrY-1),
-			new Vector2(GrX-1, GrY), new Vector2(GrX-1, GrY+1), new Vector2(GrX, GrY+1)
-		};
-		CubeNeighbours = new Vector3[] {
-			new Vector3(CubeCoordinates.x+1, CubeCoordinates.y-1,  CubeCoordinates.z), new Vector3(CubeCoordinates.x+1,  CubeCoordinates.y, CubeCoordinates.z-1), new Vector3(CubeCoordinates.x, CubeCoordinates.y+1, CubeCoordinates.z-1),
-			new Vector3(CubeCoordinates.x-1, CubeCoordinates.y+1,  CubeCoordinates.z), new Vector3(CubeCoordinates.x-1,  CubeCoordinates.y, CubeCoordinates.z+1), new Vector3(CubeCoordinates.x, CubeCoordinates.y-1, CubeCoordinates.z+1)
-		};
 		Passable = true;
 		BlockingTheView = false;
 		Cost = 1;
@@ -54,14 +41,6 @@ public class HexTile {
 		HexObject = Hex_;
 		GlobalCoordinates = new Vector3(x, 0, y);
 		GridCoordinates = new Vector2(GrX, GrY);
-		GridNeighbours = new Vector2[] {
-			new Vector2(GrX+1, GrY), new Vector2(GrX+1, GrY-1), new Vector2(GrX, GrY-1),
-			new Vector2(GrX-1, GrY), new Vector2(GrX-1, GrY+1), new Vector2(GrX, GrY+1)
-		};
-		CubeNeighbours = new Vector3[] {
-			new Vector3(CubeCoordinates.x+1, CubeCoordinates.y-1,  CubeCoordinates.z), new Vector3(CubeCoordinates.x+1,  CubeCoordinates.y, CubeCoordinates.z-1), new Vector3(CubeCoordinates.x, CubeCoordinates.y+1, CubeCoordinates.z-1),
-			new Vector3(CubeCoordinates.x-1, CubeCoordinates.y+1,  CubeCoordinates.z), new Vector3(CubeCoordinates.x-1,  CubeCoordinates.y, CubeCoordinates.z+1), new Vector3(CubeCoordinates.x, CubeCoordinates.y-1, CubeCoordinates.z+1)
-		};
 		Passable = Passable_;
 		BlockingTheView = false;
 		Cost = Cost_;

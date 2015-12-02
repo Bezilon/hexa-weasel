@@ -8,15 +8,18 @@ public class GridManager : MonoBehaviour {
 	public Vector2 GridSize;
 	public float HexRadius;
 
-	public Vector2 PlayerGridPosition;
 	public Vector2 TestGoalGridPosition;
+
+	// Default Tile Object
+	public GameObject DefaultTile;
+
+	[HideInInspector]
+	public static Vector2 PlayerGridPosition;
 	public Vector3 PlayerCubePosition {
 		get {
 			return new Vector3(PlayerGridPosition.x, PlayerGridPosition.y, -PlayerGridPosition.x-PlayerGridPosition.y);
 		}
 	}
-	// Default Tile Object
-	public GameObject DefaultTile;
 
 	[HideInInspector]
 	public static readonly Vector3[] Directions = new [] {
@@ -28,11 +31,10 @@ public class GridManager : MonoBehaviour {
 		new Vector3(0,-1,1)
 	};
 	[HideInInspector]
-	private List<HexTile> HexList = new List<HexTile>();
+	public List<HexTile> HexList = new List<HexTile>();
 
 	// Use this for initialization
 	void Start() {
-		PlayerGridPosition = new Vector2(0.0F,0.0F);
 		CreateBasicGrid();
 		HighlightPath( SimplePath( FindHex( PlayerGridPosition ), FindHex( TestGoalGridPosition ) ) );
 	}
@@ -61,24 +63,38 @@ public class GridManager : MonoBehaviour {
 		float YStep = Mathf.Sqrt( HexRadius*HexRadius - HexRadius*HexRadius/4 );
 		float XStep = HexRadius - Mathf.Sqrt( HexRadius*HexRadius - YStep*YStep )/2;
 		float OddRowPush = 0.0F;
+		bool RandomPassable;
+		bool PlayerPlaced = false;
+		int GridCorrector = 0;
 		Vector3 GlobalCoordinates = new Vector3(0.0F, 0.0F, 0.0F);
 		GameObject CurrentTile;
+		HexTile TempHex;
+		System.Random Rand = new System.Random();
 
 		for (int GridX = 0; GridX < (int)GridSize.x; GridX++) {
 			OddRowPush = ( GridX % 2 == 1 ) ? ( YStep / 2 ) : 0;
-			for (int GridY = 0; GridY < (int)GridSize.y; GridY++) {
+			for (int GridY = GridCorrector; GridY < (int)GridSize.y + GridCorrector; GridY++) {
 				try {
-					GlobalCoordinates.x = (GridY*YStep)+OddRowPush;
+					GlobalCoordinates.x = ( ( GridY - GridCorrector ) * YStep ) + OddRowPush;
 					GlobalCoordinates.y = -GridX*XStep;
 					CurrentTile = (GameObject)Instantiate(DefaultTile, new Vector3(GlobalCoordinates.x, 0, GlobalCoordinates.y), Quaternion.identity);
 					CurrentTile.name = "[" + GridY + "," + GridX + "]";
 					CurrentTile.transform.SetParent(this.transform);
-					HexList.Add(new HexTile(CurrentTile, GlobalCoordinates.x, GlobalCoordinates.y, GridX, GridY, true, 1));
+					RandomPassable = Rand.NextDouble() > 0.2;
+					TempHex = new HexTile(CurrentTile, GlobalCoordinates.x, GlobalCoordinates.y, GridX, GridY, RandomPassable, 1);
+					TempHex.ColorHexTile(new Color(Convert.ToInt32(RandomPassable), Convert.ToInt32(RandomPassable), Convert.ToInt32(RandomPassable),1));
+					if (!PlayerPlaced && RandomPassable) { 
+						PlayerGridPosition = new Vector2(GridX, GridY);
+						PlayerPlaced = true;
+					}
+					HexList.Add(TempHex);
 				}
 				catch( UnityException e ) {
 					Debug.Log( "Caught an error: " + e );
 				}
 			}
+
+			if( GridX % 2 == 1 ) GridCorrector--;
 		}
 	}
 
@@ -86,7 +102,7 @@ public class GridManager : MonoBehaviour {
 		
 	}
 
-	private void LoadTerrain() {
+	private void LoadMap() {
 		
 	}
 
@@ -100,6 +116,16 @@ public class GridManager : MonoBehaviour {
 
 	public HexTile FindHex(HexTile a) {
 		return HexList.Find( h => (h == a) );
+	}
+
+	public HexTile FindHex(GameObject a) {
+		return HexList.Find( h => (h.HexObject == a) );
+	}
+
+	public void resetBoardHighlights() {
+		foreach (HexTile i in HexList) {
+			if(i.Passable) i.ColorHexTile(new Color(1,1,1,1));
+		}
 	}
 
 	public int HeuristicHexDistance(HexTile a, HexTile b) {
