@@ -21,18 +21,6 @@ public class GridManager : MonoBehaviour {
 		}
 	}
 
-	[HideInInspector]
-	public static readonly Vector3[] Directions = new [] {
-		new Vector3(1,-1,0),
-		new Vector3(1,0,-1),
-		new Vector3(0,1,-1),
-		new Vector3(-1,1,0),
-		new Vector3(-1,0,1),
-		new Vector3(0,-1,1)
-	};
-	[HideInInspector]
-	public List<HexTile> HexList = new List<HexTile>();
-
 	// Use this for initialization
 	void Start() {
 		CreateBasicGrid();
@@ -50,7 +38,7 @@ public class GridManager : MonoBehaviour {
 	}
 	
 	public IEnumerable<HexTile> Neighbors(HexTile a) {
-		foreach (Vector3 dir in Directions) {
+		foreach (Vector3 dir in HexTile.Directions) {
 			Vector3 NextHexCoords = new Vector3(a.CubeCoordinates.x + dir.x, a.CubeCoordinates.y + dir.y, a.CubeCoordinates.z + dir.z);
 			HexTile NextHex = FindHex(NextHexCoords);
 			if ( NextHex != null && HexInBounds(NextHex) && NextHex.Passable) {
@@ -74,24 +62,28 @@ public class GridManager : MonoBehaviour {
 		for (int GridX = 0; GridX < (int)GridSize.x; GridX++) {
 			OddRowPush = ( GridX % 2 == 1 ) ? ( YStep / 2 ) : 0;
 			for (int GridY = GridCorrector; GridY < (int)GridSize.y + GridCorrector; GridY++) {
-				try {
-					GlobalCoordinates.x = ( ( GridY - GridCorrector ) * YStep ) + OddRowPush;
-					GlobalCoordinates.y = -GridX*XStep;
-					CurrentTile = (GameObject)Instantiate(DefaultTile, new Vector3(GlobalCoordinates.x, 0, GlobalCoordinates.y), Quaternion.identity);
-					CurrentTile.name = "[" + GridY + "," + GridX + "]";
-					CurrentTile.transform.SetParent(this.transform);
-					RandomPassable = Rand.NextDouble() > 0.2;
-					TempHex = new HexTile(CurrentTile, GlobalCoordinates.x, GlobalCoordinates.y, GridX, GridY, RandomPassable, 1);
-					TempHex.ColorHexTile(new Color(Convert.ToInt32(RandomPassable), Convert.ToInt32(RandomPassable), Convert.ToInt32(RandomPassable),1));
-					if (!PlayerPlaced && RandomPassable) { 
-						PlayerGridPosition = new Vector2(GridX, GridY);
-						PlayerPlaced = true;
-					}
-					HexList.Add(TempHex);
+
+				GlobalCoordinates.x = ( ( GridY - GridCorrector ) * YStep ) + OddRowPush;
+				GlobalCoordinates.y = -GridX*XStep;
+				
+				//Instantiating a tile 
+				CurrentTile = (GameObject)Instantiate(DefaultTile, new Vector3(GlobalCoordinates.x, 0, GlobalCoordinates.y), Quaternion.identity);
+				CurrentTile.name = "[" + GridY + "," + GridX + "]";
+				CurrentTile.transform.SetParent(this.transform);
+				CurrentTile.AddComponent<HexTile>();
+				CurrentTile.GetComponent<HexTile>().GridCoordinates = new Vector2(GridX, GridY);
+				CurrentTile.GetComponent<HexTile>().Passable = RandomPassable;
+				CurrentTile.GetComponent<HexTile>().Cost = 1;
+				
+				/*RandomPassable = Rand.NextDouble() > 0.2;
+				TempHex = new HexTile(CurrentTile, GlobalCoordinates.x, GlobalCoordinates.y, GridX, GridY, RandomPassable, 1);
+				TempHex.ColorHexTile(new Color(Convert.ToInt32(RandomPassable), Convert.ToInt32(RandomPassable), Convert.ToInt32(RandomPassable),1));
+				if (!PlayerPlaced && RandomPassable) { 
+					PlayerGridPosition = new Vector2(GridX, GridY);
+					PlayerPlaced = true;
 				}
-				catch( UnityException e ) {
-					Debug.Log( "Caught an error: " + e );
-				}
+				HexList.Add(TempHex);*/
+					
 			}
 
 			if( GridX % 2 == 1 ) GridCorrector--;
@@ -107,11 +99,12 @@ public class GridManager : MonoBehaviour {
 	}
 
 	public HexTile FindHex(Vector3 a) {
-		return HexList.Find( h => (h.CubeCoordinates == a) );
+		transform.Find("[" + a.z + "," + a.x + "]");
+		//return HexList.Find( h => (h.CubeCoordinates == a) );
 	}
 
 	public HexTile FindHex(Vector2 a) {
-		return HexList.Find( h => (h.GridCoordinates == a) );
+		//return HexList.Find( h => (h.GridCoordinates == a) );
 	}
 
 	public HexTile FindHex(HexTile a) {
@@ -133,7 +126,7 @@ public class GridManager : MonoBehaviour {
 	}
 
 	// A* Search based simple path
-	public List<HexTile> SimplePath(HexTile start, HexTile goal) {
+	public List<HexTile> SimplePath(HexTile start, HexTile goal, int steps = 3) {
 		List<HexTile> Path = new List<HexTile>();
 		Dictionary<HexTile, HexTile> CameFrom = new Dictionary<HexTile, HexTile>();
 		Dictionary<HexTile, int> CostSoFar = new Dictionary<HexTile, int>();
@@ -143,7 +136,7 @@ public class GridManager : MonoBehaviour {
 		CameFrom[start] = start;
 		CostSoFar[start] = 0;
 		
-		while (frontier.Count > 0) {
+		for (int stepsTaken = 0; frontier.Count > 0 && stepsTaken < steps; stepsTaken++) {
 			HexTile current = frontier.Dequeue();
 			
 			if (current.Equals(goal)) break;
