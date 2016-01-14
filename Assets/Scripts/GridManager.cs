@@ -13,11 +13,15 @@ public class GridManager : MonoBehaviour {
 	// Default Tile Object
 	public GameObject DefaultTile;
 
-	[HideInInspector]
-	public static Vector2 PlayerGridPosition;
+	public static HexTile PlayersTile;
+	public Vector2 PlayerGridPosition {
+		get {
+			return PlayersTile.GridCoordinates;
+		}
+	}
 	public Vector3 PlayerCubePosition {
 		get {
-			return new Vector3(PlayerGridPosition.x, PlayerGridPosition.y, -PlayerGridPosition.x-PlayerGridPosition.y);
+			return PlayersTile.CubeCoordinates;
 		}
 	}
 
@@ -25,16 +29,30 @@ public class GridManager : MonoBehaviour {
 	void Start() {
 		CreateBasicGrid();
 		HighlightPath( SimplePath( FindHex( PlayerGridPosition ), FindHex( TestGoalGridPosition ) ) );
+		HighlightPlayerPosition();
 	}
 	
 	// Update is called once per frame
 	void Update() {
+
+		// Clicking on the board
+		if (Input.GetMouseButtonDown(0)){
+			Ray ray = GameObject.Find("MainCamera").GetComponent<Camera>().ScreenPointToRay(Input.mousePosition);
+			RaycastHit hit;
+			HexTile ClickedHex;
+			if (Physics.Raycast(ray, out hit)){
+				//ClickedHex = Grid.FindHex(hit.transform.gameObject);
+				ClickedHex = hit.transform.gameObject.GetComponent<HexTile>();
+				
+				resetBoardHighlights();
+				HighlightPath( SimplePath( GridManager.PlayersTile, ClickedHex ) );
+			}
+		}
 		//Highlight Player position
-		HighlightPlayerPosition();
 	}
 
 	public bool HexInBounds(HexTile a) {
-		return (a.GridCoordinates.x >= 0.0F) && (a.GridCoordinates.y >= 0.0F);
+		return (a.GridCoordinates.x >= 0.0F) && (a.GridCoordinates.y >= ( 0.0F - ( GridSize.y / 2.0F ) + ( GridSize.y % 2 ) ) );
 	}
 	
 	public IEnumerable<HexTile> Neighbors(HexTile a) {
@@ -51,12 +69,10 @@ public class GridManager : MonoBehaviour {
 		float YStep = Mathf.Sqrt( HexRadius*HexRadius - HexRadius*HexRadius/4 );
 		float XStep = HexRadius - Mathf.Sqrt( HexRadius*HexRadius - YStep*YStep )/2;
 		float OddRowPush = 0.0F;
-		bool RandomPassable;
-		bool PlayerPlaced = false;
+		bool Passable;
 		int GridCorrector = 0;
 		Vector3 GlobalCoordinates = new Vector3(0.0F, 0.0F, 0.0F);
 		GameObject CurrentTile;
-		HexTile TempHex;
 		System.Random Rand = new System.Random();
 
 		for (int GridX = 0; GridX < (int)GridSize.x; GridX++) {
@@ -72,9 +88,13 @@ public class GridManager : MonoBehaviour {
 				CurrentTile.transform.SetParent(this.transform);
 				CurrentTile.AddComponent<HexTile>();
 				CurrentTile.GetComponent<HexTile>().GridCoordinates = new Vector2(GridX, GridY);
-				CurrentTile.GetComponent<HexTile>().Passable = RandomPassable;
+				Passable = Rand.NextDouble() > 0.2;
+				CurrentTile.GetComponent<HexTile>().Passable = Passable;
+				CurrentTile.GetComponent<HexTile>().ColorHexTile(new Color(Convert.ToInt32(Passable), Convert.ToInt32(Passable), Convert.ToInt32(Passable),1));
 				CurrentTile.GetComponent<HexTile>().Cost = 1;
-				
+
+				if(GridX == 0 && GridY == 0) PlayersTile = CurrentTile.GetComponent<HexTile>();
+
 				/*RandomPassable = Rand.NextDouble() > 0.2;
 				TempHex = new HexTile(CurrentTile, GlobalCoordinates.x, GlobalCoordinates.y, GridX, GridY, RandomPassable, 1);
 				TempHex.ColorHexTile(new Color(Convert.ToInt32(RandomPassable), Convert.ToInt32(RandomPassable), Convert.ToInt32(RandomPassable),1));
@@ -99,25 +119,47 @@ public class GridManager : MonoBehaviour {
 	}
 
 	public HexTile FindHex(Vector3 a) {
-		transform.Find("[" + a.z + "," + a.x + "]");
+		foreach (Transform child in transform)
+		{
+			if(child.GetComponent<HexTile>().CubeCoordinates == a) return child.GetComponent<HexTile>();
+		}
+		return null;
+
+		//return transform.Find("[" + a.z + "," + a.x + "]").GetComponent<HexTile>();
+
 		//return HexList.Find( h => (h.CubeCoordinates == a) );
 	}
 
 	public HexTile FindHex(Vector2 a) {
+		foreach (Transform child in transform)
+		{
+			if(child.GetComponent<HexTile>().GridCoordinates == a) return child.GetComponent<HexTile>();
+		}
+		return null;
+
+		//return transform.Find("[" + a.y + "," + a.x + "]").GetComponent<HexTile>();
+
 		//return HexList.Find( h => (h.GridCoordinates == a) );
 	}
 
 	public HexTile FindHex(HexTile a) {
-		return HexList.Find( h => (h == a) );
+		HexTile[] allHexes = gameObject.GetComponentsInChildren<HexTile>();
+		foreach(HexTile currentHex in allHexes) {
+			if(a == currentHex) return currentHex;
+		}
+		return null;
+		//return HexList.Find( h => (h == a) );
 	}
 
 	public HexTile FindHex(GameObject a) {
-		return HexList.Find( h => (h.HexObject == a) );
+		return a.GetComponent<HexTile>();
 	}
 
 	public void resetBoardHighlights() {
-		foreach (HexTile i in HexList) {
-			if(i.Passable) i.ColorHexTile(new Color(1,1,1,1));
+		foreach (Transform child in transform)
+		{
+			if(child.GetComponent<HexTile>().Passable) child.GetComponent<HexTile>().ColorHexTile(new Color(1,1,1,1));
+			else child.GetComponent<HexTile>().ColorHexTile(new Color(0,0,0,1));
 		}
 	}
 
@@ -126,7 +168,7 @@ public class GridManager : MonoBehaviour {
 	}
 
 	// A* Search based simple path
-	public List<HexTile> SimplePath(HexTile start, HexTile goal, int steps = 3) {
+	public List<HexTile> SimplePath(HexTile start, HexTile goal) {
 		List<HexTile> Path = new List<HexTile>();
 		Dictionary<HexTile, HexTile> CameFrom = new Dictionary<HexTile, HexTile>();
 		Dictionary<HexTile, int> CostSoFar = new Dictionary<HexTile, int>();
@@ -136,7 +178,7 @@ public class GridManager : MonoBehaviour {
 		CameFrom[start] = start;
 		CostSoFar[start] = 0;
 		
-		for (int stepsTaken = 0; frontier.Count > 0 && stepsTaken < steps; stepsTaken++) {
+		while ( frontier.Count > 0 ) {
 			HexTile current = frontier.Dequeue();
 			
 			if (current.Equals(goal)) break;
