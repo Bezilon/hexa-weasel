@@ -5,26 +5,26 @@ using System.Collections.Generic;
 
 public class PriorityQueue<T>
 {	
-	private List<Tuple<T, int>> elements = new List<Tuple<T, int>>();
+	private List<KeyValuePair<T, int>> elements = new List<KeyValuePair<T, int>>();
 	
 	public int Count {
 		get { return elements.Count; }
 	}
 	
 	public void Enqueue(T item, int priority) {
-		elements.Add(new Tuple<T, int>(item, priority));
+		elements.Add(new KeyValuePair<T, int>(item, priority));
 	}
 	
 	public T Dequeue() {
 		int bestIndex = 0;
 		
 		for (int i = 0; i < elements.Count; i++) {
-			if (elements[i].Item2 < elements[bestIndex].Item2) {
+			if (elements[i].Value < elements[bestIndex].Value) {
 				bestIndex = i;
 			}
 		}
 		
-		T bestItem = elements[bestIndex].Item1;
+		T bestItem = elements[bestIndex].Key;
 		elements.RemoveAt(bestIndex);
 		return bestItem;
 	}
